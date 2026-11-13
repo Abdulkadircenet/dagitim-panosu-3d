@@ -1,0 +1,63 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dağıtım Panosu — 3B İnceleme</title><style>body{margin:0;background:#101722;color:#edf2f7;font:14px system-ui}#view{position:fixed;inset:0}aside{position:absolute;top:16px;left:16px;background:#172334e8;padding:18px;border:1px solid #435268;border-radius:14px;max-width:300px}h2{margin:0 0 7px;font-size:19px}p{color:#b9c8da;line-height:1.5;margin:6px 0 12px}button{background:#33465e;border:1px solid #60718a;color:white;border-radius:8px;padding:9px 11px;margin:3px;cursor:pointer}button:hover{background:#4b6686}.note{font-size:12px;color:#aebfd1}#err{position:absolute;bottom:12px;left:16px;color:#f4bd90}</style></head><body><div id="view"></div><aside><h2>Dağıtım Panosu · Geliştirilmiş 3B</h2><p>165 × 65 × 120 cm gövde. Yüksekliğe tekerlekler dahil değildir.</p><button id="front">Ön</button><button id="side">Yan</button><button id="top">Üst</button><button id="iso">İzometrik</button><button id="doors">Kapakları aç</button><button id="jack">Transpaleti gizle</button><p class="note">Sol tuş: döndür · Tekerlek: yakınlaştır · Sağ tuş: kaydır</p><p class="note">Gerçekçi transpalet ve düzenli çift kapak içerir. Kavramsal modeldir; imalat öncesi yük, denge, tekerlek kapasitesi ve transpalet giriş açıklıkları doğrulanmalıdır.</p></aside><div id="err"></div><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}</script><script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x101722);const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.01,100);camera.position.set(3.0,2.25,3.6);const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;document.getElementById('view').appendChild(renderer.domElement);const ctl=new OrbitControls(camera,renderer.domElement);ctl.target.set(0,.86,0);ctl.enableDamping=true;ctl.minDistance=1.3;ctl.maxDistance=9;
+scene.add(new THREE.HemisphereLight(0xffffff,0x5a6472,2));const sun=new THREE.DirectionalLight(0xffffff,2.5);sun.position.set(-3,6,5);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);scene.add(sun);
+const mat=(c,metal=.25)=>new THREE.MeshStandardMaterial({color:c,metalness:metal,roughness:.42});const steel=mat(0xaab4bf,.65),frame=mat(0x525e6a,.65),dark=mat(0x17212d),rubber=mat(0x171b22),yellow=mat(0xf2a51b),blue=mat(0x17304a),red=mat(0xea342c),green=mat(0x32b877);
+function box(parent,w,h,d,x,y,z,m){let o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}function cyl(parent,r,h,x,y,z,m,rot=0){let o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,20),m);o.rotation.z=rot;o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o}
+let floor=box(scene,200,.02,200,0,-.02,0,mat(0x202b39));floor.receiveShadow=true;const body=new THREE.Group();scene.add(body);const baseY=.25,H=1.2,W=1.65,D=.65;box(body,W,H,D,0,baseY+H/2,0,steel); // shell
+for(let x of [-W/2,W/2])for(let z of [-D/2,D/2])box(body,.035,H+.03,.035,x,baseY+H/2,z,frame);
+for(let y of [baseY,baseY+H])for(let z of [-D/2,D/2])box(body,W+.035,.035,.035,0,y,z,frame);
+// front faces hinged at outside edges, opening outward
+const doors=[];for(let side of [-1,1]){let hingeX=side*W/2;let pivot=new THREE.Group();pivot.position.set(hingeX,0,D/2+.012);body.add(pivot);let doorW=W/2-.018;box(pivot,doorW-.01,H-.055,.025,-side*doorW/2,baseY+H/2,0,steel);box(pivot,.035,.15,.032,-side*.13,baseY+.62,.025,dark); // handle
+for(let i=0;i<10;i++)box(pivot,.14,.009,.029,-side*(doorW-.19),baseY+.23+i*.027,.027,dark);
+if(side<0){for(let i=0;i<4;i++)cyl(pivot,.013,.01,-side*(doorW-.34),baseY+.86+i*.055,.029,red,Math.PI/2);box(pivot,.15,.15,.03,-side*(doorW-.53),baseY+.92,.028,blue)}else{box(pivot,.19,.17,.035,-side*(doorW-.53),baseY+.90,.028,blue);for(let i=0;i<3;i++)cyl(pivot,.012,.01,-side*(doorW-.51)+i*.045,baseY+.83,.05,i===0?green:red,Math.PI/2)}doors.push({pivot,side});}
+// interior components, visible when doors open
+for(let x of [-.57,-.22,.15,.5]){box(body,.21,.58,.07,x,baseY+.65,D/2-.067,mat(0xd7dde4));for(let j=0;j<5;j++)box(body,.14,.032,.009,x,baseY+.43+j*.09,D/2-.026,j%2?dark:blue)}
+// four swivel wheels, each at one corner
+for(let x of [-.72,.72])for(let z of [-.245,.245]){box(body,.16,.035,.14,x,.205,z,frame);box(body,.035,.12,.12,x,.14,z,steel);let wheel=new THREE.Mesh(new THREE.CylinderGeometry(.082,.082,.06,24),rubber);wheel.rotation.z=Math.PI/2;wheel.position.set(x,.084,z);body.add(wheel);cyl(body,.024,.065,x,.084,z,steel,Math.PI/2)}
+// reinforced forklift/pallet-jack channels centered under long side
+for(let z of [-.16,.16])box(body,.94,.065,.055,0,.225,z,frame);
+// Realistic low-profile pallet jack, centered at the long front side. Forks enter beneath the cabinet.
+const jack=new THREE.Group();scene.add(jack);
+const axle=mat(0x606b73,.7),wheelGray=mat(0xaaa8a0,.18),hydraulic=mat(0x262b30,.55),accent=mat(0xe9a11c,.4);
+function beam(parent,a,b,w,h,m){let mid=new THREE.Vector3().addVectors(new THREE.Vector3(...a),new THREE.Vector3(...b)).multiplyScalar(.5);let delta=new THREE.Vector3(...b).sub(new THREE.Vector3(...a));let o=box(parent,w,delta.length(),h,mid.x,mid.y,mid.z,m);o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());return o}
+function wheelAt(parent,x,y,z,r,thick,m){let o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,thick,32),m);o.rotation.z=Math.PI/2;o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o}
+// fork tips extend under the central opening; curved ends approximated by tapered short segments
+for(let x of [-.15,.15]){
+ box(jack,.125,.042,.92,x,.113,.05,yellow);
+ box(jack,.125,.033,.15,x,.105,-.45,accent);
+ box(jack,.13,.07,.20,x,.155,.43,yellow);
+ wheelAt(jack,x,.052,-.42,.045,.045,wheelGray);
+}
+box(jack,.49,.09,.20,0,.19,.54,yellow); // welded crosshead
+box(jack,.38,.19,.24,0,.26,.62,yellow);
+// large steering wheels, gray polyurethane tires, metal hubs
+for(let x of [-.145,.145]){
+ wheelAt(jack,x,.105,.81,.103,.09,wheelGray);
+ wheelAt(jack,x+Math.sign(x)*.049,.105,.81,.034,.012,axle);
+}
+// hydraulic pump housing and polished piston
+cyl(jack,.075,.28,0,.37,.67,hydraulic);
+cyl(jack,.033,.18,0,.55,.67,steel);
+box(jack,.14,.05,.11,0,.59,.67,yellow);
+// angled articulated steering shaft and loop handle, positioned in front of cabinet
+beam(jack,[0,.60,.69],[0,1.30,.98],.062,.062,hydraulic);
+beam(jack,[-.20,1.32,.98],[.20,1.32,.98],.048,.048,hydraulic);
+beam(jack,[-.20,1.32,.98],[-.20,1.10,.98],.047,.047,hydraulic);
+beam(jack,[.20,1.32,.98],[.20,1.10,.98],.047,.047,hydraulic);
+beam(jack,[-.20,1.10,.98],[0,1.02,.98],.047,.047,hydraulic);
+beam(jack,[.20,1.10,.98],[0,1.02,.98],.047,.047,hydraulic);
+box(jack,.11,.025,.035,0,1.34,.98,red);
+// extra cabinet details: flat top, consistent doors, visible hinge knuckles and weather seals
+for(let x of [-W/2,W/2])for(let z of [D/2,-D/2])for(let y of [baseY+.16,baseY+H-.16])cyl(body,.018,.048,x,y,z,steel);
+for(let x of [-.65,.65])for(let z of [-.24,.24]){
+ const eye=new THREE.Mesh(new THREE.TorusGeometry(.028,.008,8,24),steel);eye.rotation.x=Math.PI/2;eye.position.set(x,baseY+H+.055,z);body.add(eye);
+}
+// Front indicator bezels and vent slats are part of each swinging door.
+// Add a structural plinth and two fork channels to distinguish the lifting interface.
+for(let x of [-.37,.37])box(body,.09,.095,.56,x,.215,0,frame);
+const grid=new THREE.GridHelper(8,40,0x415269,0x273344);grid.position.y=.003;scene.add(grid);
+function view(x,y,z){camera.position.set(x,y,z);ctl.target.set(0,.85,0);ctl.update()}document.getElementById('front').onclick=()=>view(0,1.1,3.6);document.getElementById('side').onclick=()=>view(3.6,1.1,0);document.getElementById('top').onclick=()=>view(0,4.3,.01);document.getElementById('iso').onclick=()=>view(3,2.25,3.6);let opened=false;document.getElementById('doors').onclick=e=>{opened=!opened;for(let {pivot,side} of doors)pivot.rotation.y=opened?side*1.65:0;e.target.textContent=opened?'Kapakları kapat':'Kapakları aç'};document.getElementById('jack').onclick=e=>{jack.visible=!jack.visible;e.target.textContent=jack.visible?'Transpaleti gizle':'Transpaleti göster'};
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});function animate(){requestAnimationFrame(animate);ctl.update();renderer.render(scene,camera)}animate();
+</script></body></html>
